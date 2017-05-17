@@ -36,6 +36,8 @@ import okhttp3.Response;
 
 public class MainActivity extends FragmentActivity {
 
+    public static String URL ="http://192.168.0.106:8080/TotemDown/LoginServe?username=linyuanbin&password=123456";
+
     private CircleImageView qq;
     private TextView registered,forgotpassword;
     private EditText account,password;
@@ -53,7 +55,7 @@ public class MainActivity extends FragmentActivity {
     DateOperation dateOperation = new DateOperation();
 
     OkHttpClient okHttpClient = new OkHttpClient();
-    private String url1 = "http://192.168.0.116:8080/TotemDown/LoginServe?username=linyuanbin&password=123456";
+//    private String url1 = "http://192.168.0.116:8080/TotemDown/LoginServe?username=linyuanbin&password=123456";
 
 
     @Override
@@ -197,7 +199,7 @@ public class MainActivity extends FragmentActivity {
                 .create(MediaType.parse("text/x-markdown; charset=utf-8"),post);
         Request.Builder builder3 = new Request.Builder();
         Request request2 = builder3
-                .url(url1)
+                .url(URL)
                 .post(requestBody1)
                 .build();
         CallHttp(request2);

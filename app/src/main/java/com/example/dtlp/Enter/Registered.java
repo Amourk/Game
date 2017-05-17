@@ -12,6 +12,7 @@ import android.widget.RadioButton;
 import android.widget.Toast;
 
 import com.example.dtlp.Date.User;
+import com.example.dtlp.MainActivity;
 import com.example.dtlp.R;
 import com.example.dtlp.user_main.MainActivity_2;
 import com.google.gson.Gson;
@@ -36,24 +37,6 @@ import okhttp3.Response;
  */
 public class Registered extends Activity {
 
-//    //请求相机
-//    private static final int REQUEST_CAPTURE = 100;
-//    //请求相册
-//    private static final int REQUEST_PICK = 101;
-//    //请求截图
-//    private static final int REQUEST_CROP_PHOTO = 102;
-//    //请求访问外部存储
-//    private static final int READ_EXTERNAL_STORAGE_REQUEST_CODE = 103;
-//    //请求写入外部存储
-//    private static final int WRITE_EXTERNAL_STORAGE_REQUEST_CODE = 104;
-//    //头像1
-//    private CircleImageView headImage1;
-//    //头像2
-//    private ImageView headImage2;
-//    //调用照相机返回图片临时文件
-//    private File tempFile;
-//    // 1: qq, 2: weixin
-//    private int type;
 
     private EditText name,password,job,conpassword,number;
     private RadioButton man,woman;
@@ -66,8 +49,6 @@ public class Registered extends Activity {
     private static final String PASSWORD_PATTERN = "^(?![0-9]+$)(?![a-zA-Z]+$)[0-9A-Za-z]{6,16}$";
 
     OkHttpClient okHttpClient = new OkHttpClient();
-    private String url1 = "http://192.168.0.137:8080/Login/";
-    private String url = "http://192.168.0.113:8080/TotemDown/LoginServe?username=linyuanbin&password=123456";
 
     private Pattern pattern = Pattern.compile(MOBILE_PATTERN);
     private Matcher matcher;
@@ -210,7 +191,7 @@ public class Registered extends Activity {
                 .create(MediaType.parse("text/x-markdown; charset=utf-8"),post);
         Request.Builder builder3 = new Request.Builder();
         Request request2 = builder3
-                .url(url)
+                .url(MainActivity.URL)
                 .post(requestBody1)
                 .build();
         CallHttp(request2);

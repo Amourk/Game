@@ -70,8 +70,11 @@
             android:windowSoftInputMode="stateHidden|adjustResize" />
         <activity android:name=".user_main.main_search"
             android:windowSoftInputMode="stateAlwaysVisible"
+            >
+        </activity>
+        <activity android:name=".tap_fragment.Image">
 
-            ></activity>
+        </activity>
     </application>
 
 </manifest>
