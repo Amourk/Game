@@ -17,6 +17,12 @@ public class fragment_history extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup group, Bundle bundle){
 
+
+
+
+
+
+
         return  inflater.inflate(R.layout.fragment_history,group,false);
     }
 

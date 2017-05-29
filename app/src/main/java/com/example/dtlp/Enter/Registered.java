@@ -55,11 +55,15 @@ public class Registered extends Activity {
 
     private Pattern pattern1 = Pattern.compile(PASSWORD_PATTERN);
     private Matcher matcher1;
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.registered);
         Bmob.initialize(this,KEY);
+
+//        loginActivity.db = openOrCreateDatabase("User.db",MODE_PRIVATE,null);
 
         initView();
 
@@ -212,12 +216,24 @@ public class Registered extends Activity {
 
                 final String res = response.body().string();
                 Log.i("info", " GET请求成功！！！");
+
+                final Gson gson = new Gson();
+                final User user = gson.fromJson(res, User.class);
+                 MainActivity.UserID = user.getUserID();
+//                String UserName = user.getUserName();
+//                String UserPassword = user.getUserPassword();
+//                String UserSex = user.getUserSex();
+//                String UserMajor=user.getUserMajor();
+//                loginActivity.db.execSQL("insert into User (UserID,UserName,UserPassword,UserSex,UserMajor) values " +
+//                        "('"+UserID+"','"+UserName+"','"+UserPassword+"','"+UserSex+"','"+UserMajor+"',)");//添加UserID到数据库中
+
+
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
                         Log.i("info", "res  = " + res.toString());
-                        Gson gson = new Gson();
-                        User user = gson.fromJson(res, User.class);//解析服务器端传过来的值UserID和state
+//                        Gson gson = new Gson();
+//                        User user = gson.fromJson(res, User.class);//解析服务器端传过来的值UserID和state
                         if (user.getState().equals("true"))
                         {
 //                            Log.i("info", "res  = " + res.toString());
@@ -228,14 +244,6 @@ public class Registered extends Activity {
                         }//得到的res为用户ID  保存到本地
                         else
                             Toast.makeText(Registered.this, "注册失败了哦！！！", Toast.LENGTH_SHORT).show();
-//                        if (!res.equals(""))
-//                        {
-//                            Log.i("info", "res  = " + res.toString());
-//                            Toast.makeText(Registered.this, "注册成功！ 欢迎使用！！", Toast.LENGTH_SHORT).show();
-//                            Intent intent1 = new Intent(Registered.this,MainActivity_2.class);
-//                            startActivity(intent1);
-//                            Registered.this.finish();
-//                        }//得到的res为用户ID  保存到本地
                     }
                 });
             }

@@ -14,6 +14,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
@@ -42,11 +43,13 @@ import android.widget.PopupWindow;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.example.dtlp.Date.UploadUtil;
 import com.example.dtlp.MainActivity;
 import com.example.dtlp.R;
 import com.example.dtlp.entity.ItemBean;
 import com.example.dtlp.side_pull_box.About;
 import com.example.dtlp.side_pull_box.Personal_information;
+import com.example.dtlp.start.loginActivity;
 import com.example.dtlp.tap_fragment.fragment_classify;
 import com.example.dtlp.tap_fragment.fragment_history;
 import com.example.dtlp.tap_fragment.fragment_push;
@@ -57,9 +60,21 @@ import com.joanzapata.android.BaseAdapterHelper;
 import com.joanzapata.android.QuickAdapter;
 import com.nineoldandroids.view.ViewHelper;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
+
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 
 
 public class MainActivity_2 extends BaseActivity implements  View.OnClickListener {
@@ -104,9 +119,17 @@ public class MainActivity_2 extends BaseActivity implements  View.OnClickListene
     // 1: qq, 2: weixin
     private int type;
 
+    StringBuilder str;
+
     public static boolean isEnter = false;
 
     private static boolean isExit = false;
+
+    private String UserID = "Sun May 21 18:13:33 CST 2017mzZxs";
+    File filename = new File(loginActivity.SDPATH + "dtlp/" + MainActivity.UserID + "/" + MainActivity.UserID + ".txt"); // 要读取以上路径的input。txt文件
+
+
+    OkHttpClient okHttpClient = new OkHttpClient();
 
     Handler mHandler = new Handler() {
 
@@ -130,9 +153,52 @@ public class MainActivity_2 extends BaseActivity implements  View.OnClickListene
 
         exit = (Button) findViewById(R.id.exit);
         name = (TextView) findViewById(R.id.name);
-        SharedPreferences sp = getSharedPreferences("Personal_Information", Context.MODE_PRIVATE);
-        name.setText(sp.getString("nickname",""));
+
+        //从本地用户文件中将数据读取出来
+        String userdata = "";//读出来的Json数据
+        String UserName = "";
+//        File filename = new File(loginActivity.SDPATH + "dtlp/" + MainActivity.UserID + "/" + MainActivity.UserID + ".txt"); // 要读取以上路径的input。txt文件
+        Log.i("userdata", "userdata: = " + filename);
+        try {
+            FileReader read = new FileReader(filename);
+            StringBuffer sb = new StringBuffer();
+            char ch[] = new char[1024];
+            int d = read.read(ch);
+            while(d!=-1){
+                String str = new String(ch,0,d);
+                sb.append(str);
+                d = read.read(ch);
+            }
+            userdata= sb.toString();
+            System.out.print(sb.toString());
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        Log.i("userdata", "userdata: = " + userdata);
+        //解析得到的Json数据 得到用户名字
+        JSONObject jsonObject = null;
+        try {
+            jsonObject = new JSONObject(userdata);
+             UserName=jsonObject.getJSONObject("userData").getString("UserName");
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        name.setText(UserName); //进入MainActivity_2 将以用户名字赋予name的控件
+
         createCameraTempFile(savedInstanceState);
+
+
+        //进入MainActivity_2 将isEnter赋值为true 判断是否进入使之退出后直接进去MainActivity_2 不必再次登录
+        //在保存本地的用户信息添加isEnter的值
+//        try {
+//            JSONObject  jsonObject1 = new JSONObject(userdata);
+//            JSONObject user = jsonObject1.getJSONObject("userData");
+//            user.put("isEnter",true);
+//        } catch (JSONException e) {
+//            e.printStackTrace();
+//        }
 
 
         SharedPreferences msharedPreferences = getSharedPreferences("login",Context.MODE_PRIVATE);
@@ -254,10 +320,12 @@ public class MainActivity_2 extends BaseActivity implements  View.OnClickListene
         switch (view.getId())
         {
             case R.id.exit:
+
                 SharedPreferences sp = getSharedPreferences("login",Context.MODE_PRIVATE);
                 SharedPreferences.Editor editor = sp.edit();
                 editor.clear();
                 editor.commit();
+
                 Intent intent1 = new Intent(MainActivity_2.this,MainActivity.class);
                 startActivity(intent1);
                 break;
@@ -438,8 +506,14 @@ public class MainActivity_2 extends BaseActivity implements  View.OnClickListene
                     if (uri == null) {
                         return;
                     }
-                    String cropImagePath = getRealFilePathFromUri(getApplicationContext(), uri);
-                    Bitmap bitMap = BitmapFactory.decodeFile(cropImagePath);
+                    String cropImagePath = getRealFilePathFromUri(getApplicationContext(), uri);//图片的路径
+
+                    String url = "http://192.168.0.18:8080/TotemDown/UploadPicture?username=linyuanbin&password=13944677348";
+                    new MyAsyncTask().execute(cropImagePath,url);
+
+                    Log.i("file", "cropImagePath = : " + cropImagePath);
+
+                        Bitmap bitMap = BitmapFactory.decodeFile(cropImagePath);
                     if (type == 1) {
                         ByteArrayOutputStream byteArrayOutputStream=new ByteArrayOutputStream();
                         bitMap.compress(Bitmap.CompressFormat.JPEG,80,byteArrayOutputStream);
@@ -447,10 +521,26 @@ public class MainActivity_2 extends BaseActivity implements  View.OnClickListene
                         byte[] byteArray=byteArrayOutputStream.toByteArray();
                         String imageString=new String(Base64.encodeToString(byteArray, Base64.DEFAULT));
                         //第三步:将String保持至SharedPreferences
+
+                        //头像上传到服务器
+//                        String post ="{\"state\":\"uploadHeaPortr\",\"UserID\":\""+MainActivity.UserID+"\",\"imagefile\":\""+str1.toString()+"\"}";
+//                        RequestBody requestBody1 = RequestBody
+//                                .create(MediaType.parse("text/x-markdown; charset=utf-8"),post);
+//                        Request.Builder builder3 = new Request.Builder();
+//                        Request request2 = builder3
+//                                .url(MainActivity.URL)
+//                                .post(requestBody1)
+//                                .build();
+//                        CallHttp(request2);
+//                        Log.i("info", "post = " + post);
+
+
                         SharedPreferences sharedPreferences=getSharedPreferences("Head_portrait", Context.MODE_PRIVATE);
                         SharedPreferences.Editor editor = sharedPreferences.edit();
                         editor.putString("image", imageString);
                         editor.commit();
+
+
                         ivBottom.setImageBitmap(bitMap);
                         ivIcon.setImageBitmap(bitMap);
                     } else {
@@ -462,6 +552,45 @@ public class MainActivity_2 extends BaseActivity implements  View.OnClickListene
                 }
                 break;
         }
+    }
+    //服务器返回数据的处理
+    public void CallHttp(Request request)
+
+    {
+        okhttp3.Call call1 = okHttpClient.newCall(request);
+        call1.enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                Log.i("info", " GET请求失败！！！");
+                Log.i("info", " e  = "  + e .toString());
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+
+                final String res = response.body().string();
+                Log.i("info", " GET请求成功！！！");
+
+//                runOnUiThread(new Runnable() {
+//                    @Override
+//                    public void run() {
+//                        Gson gson = new Gson();
+//                        User user = gson.fromJson(res, User.class);
+////                        user.getState();
+//                        if ( user.getState().equals("true"))
+//                        {
+////                            Log.i("info", "res  = " + res.toString());
+//                            Toast.makeText(MainActivity_2.this, "登录成功！！", Toast.LENGTH_SHORT).show();
+//                            Intent intent1 = new Intent(MainActivity_2.this, MainActivity_2.class);
+//                            startActivity(intent1);
+//                            MainActivity_2.this.finish();
+//                        }//得到的res为用户ID  保存到本地
+//                        else
+//                            Toast.makeText(MainActivity_2.this, "登录失败了哦！！！", Toast.LENGTH_SHORT).show();
+//                    }
+//                });
+            }
+        });
     }
 
 
@@ -627,6 +756,7 @@ public class MainActivity_2 extends BaseActivity implements  View.OnClickListene
                 }
                 else{
                     ft.show(fragment_history);
+                    Log.i("imageUrl", "OOOOOOOOOOOOOOOOOO ");
                 }
                 imageButton_history.setImageResource(R.drawable.history10);
                 textView_history.setTextColor(Color.rgb(30,144,255));
@@ -668,8 +798,73 @@ public class MainActivity_2 extends BaseActivity implements  View.OnClickListene
 
     @Override
     protected void onRestart() {
-        SharedPreferences sp = getSharedPreferences("Personal_Information", Context.MODE_PRIVATE);
-        name.setText(sp.getString("nickname",""));
+
+
+
+        //修改用户姓名之后MainActivity_2重新返回 便修改名字
+        String userdata = "";
+        String UserName = "";
+//        File filename = new File(loginActivity.SDPATH + "dtlp/" + MainActivity.UserID + "/" + MainActivity.UserID + ".txt"); // 要读取以上路径的input。txt文件
+        Log.i("userdata", "userdata: = " + filename);
+        try {
+            FileReader read = new FileReader(filename);
+            StringBuffer sb = new StringBuffer();
+            char ch[] = new char[1024];
+            int d = read.read(ch);
+            while(d!=-1){
+                String str = new String(ch,0,d);
+                sb.append(str);
+                d = read.read(ch);
+            }
+            userdata= sb.toString();
+            System.out.print(sb.toString());
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        Log.i("userdata", "userdata: = " + userdata);
+        //解析得到的Json数据 得到用户名字
+        JSONObject jsonObject = null;
+        try {
+            jsonObject = new JSONObject(userdata);
+            UserName=jsonObject.getJSONObject("userData").getString("UserName");
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        name.setText(UserName);
+
+
+//        SharedPreferences sp = getSharedPreferences("Personal_Information", Context.MODE_PRIVATE);
+//        name.setText(sp.getString("nickname",""));
+
         super.onRestart();
     }
+}
+class MyAsyncTask extends AsyncTask<String,Void,String> {
+
+    @Override
+    protected String doInBackground(String... strings) {
+
+        try {
+            File file=new File(strings[0]);
+            Log.i("file", "file=  " + file.getName());
+            return UploadUtil.uploadFile(file,strings[1]);
+        }catch (Exception ex){
+
+            ex.printStackTrace();
+        }
+
+        return "failed";
+    }
+
+    @Override
+    protected void onPostExecute(String s) {
+        super.onPostExecute(s);
+    }
+    //    @Override
+//    protected void onPostExecute(String s) {
+//
+//        Toast.makeText(getActivity(),s,Toast.LENGTH_SHORT).show();
+//    }
 }

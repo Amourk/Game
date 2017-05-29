@@ -24,6 +24,7 @@ import java.net.URL;
 public class Image extends Activity {
     public static String Label;
      String ID;
+    private String imageurl;
     PictureTagLayout pictureTagLayout;
     private TextView textView;
 
@@ -48,10 +49,12 @@ public class Image extends Activity {
         textView = (TextView) findViewById(R.id.tvPictureTagLabel);
 
 
+        Label = "";
         Intent intent=getIntent();
         Bundle bundle=intent.getExtras();//.getExtras()得到intent所附带的额外数据
         final String image=bundle.getString("image");
          ID=bundle.getString("ID");
+        imageurl = image;
         Log.i("BBBBaaa", " ima = " + image);
         Log.i("BBBBaaa", " ID = " + ID);
 
@@ -103,6 +106,7 @@ public class Image extends Activity {
         Intent mIntent = new Intent();
         mIntent.putExtra("a",Label);
         mIntent.putExtra("b",ID);
+        mIntent.putExtra("c",imageurl);
 //        mIntent.putExtra("change02", "2000");
         // 设置结果，并进行传送
         this.setResult(0, mIntent);

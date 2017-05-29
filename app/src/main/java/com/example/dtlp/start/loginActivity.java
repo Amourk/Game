@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.os.Environment;
 import android.util.Log;
 import android.view.animation.Animation;
 import android.view.animation.Animation.AnimationListener;
@@ -16,6 +17,7 @@ import com.example.dtlp.MainActivity;
 import com.example.dtlp.R;
 import com.example.dtlp.user_main.MainActivity_2;
 
+import java.io.File;
 import java.io.IOException;
 
 import okhttp3.Call;
@@ -26,11 +28,13 @@ import okhttp3.Response;
 
 public class loginActivity extends Activity implements AnimationListener {
 
-        private ImageView _ivWelcome;
+    private ImageView _ivWelcome;
     private SharedPreferences sp;
     private String isEnter = "";
-    private String url = "http://192.168.0.113:8080/TotemDown/LoginServe?username=linyuanbin&password=123456";
     OkHttpClient okHttpClient = new OkHttpClient();
+
+    public static String SDPATH = "";//本地根目录
+//    public static SQLiteDatabase db ;
 
         @Override
 protected void onCreate(Bundle savedInstanceState) {
@@ -41,12 +45,24 @@ protected void onCreate(Bundle savedInstanceState) {
         Animation animation = AnimationUtils.loadAnimation(this, R.anim.anim_);
         animation.setAnimationListener(this);
         _ivWelcome.setAnimation(animation);
-            Request.Builder builder = new Request.Builder();
-            Request request = builder
-                    .get()
-                    .url(url)
-                    .build();
-            CallHttp(request);
+            //创建APP的一个文件夹 用来保存用户的本地基本信息
+            SDPATH = Environment.getExternalStorageDirectory() + "/";
+            File file = new File(SDPATH +"dtlp");
+            file.mkdir();
+            System.out.println("创建了文件夹");
+
+
+//            Request.Builder builder = new Request.Builder();
+//            Request request = builder
+//                    .get()
+//                    .url(MainActivity.URL)
+//                    .build();
+//            CallHttp(request);
+//
+//            db = openOrCreateDatabase("User.db",MODE_PRIVATE,null);
+//            db.execSQL("create table if not exists User (_id integer primary key autoincrement," +
+//                    "UserId text ,UserName text,UserEmail text,UserSex text,UserBirthday text" +
+//                    ",UserMajor text,isEnter text,UserPassword text )");
     }
 
         @Override

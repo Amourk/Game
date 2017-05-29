@@ -59,10 +59,12 @@ public class fragment_push extends Fragment {
     private int mImageThumbSize;
     private int mImageThumbSpacing;
 
-    private String ima[] = new String[10];
-    private String ima1[] = new String[10];
-    private String ID[] = new String[10];
-    private String UserID = "Thu Apr 27 20:28:09 CST 201731ZDD";
+    private String ima[] = new String[12];
+    public static ArrayList<String> ImageUrl = new ArrayList<>();
+    private String ID[] = new String[12];
+    private String UserID = "Fri May 26 19:33:14 CST 2017Jogvx";
+
+    String MarkName = "";
 
 
     OkHttpClient okHttpClient = new OkHttpClient();
@@ -130,14 +132,14 @@ public class fragment_push extends Fragment {
         view =layoutInflater.inflate(R.layout.fragment_push,group,false);
 
         materialRefreshLayout = (MaterialRefreshLayout) view.findViewById(R.id.refresh);
-        try {
-            flash2();
-        } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
-        }
-        for (int j = 0; j < ima1.length; j++) {
-            Log.i("info", "ima =  " + ima1[j]);
-        }
+//        try {
+//            flash2();
+//        } catch (UnsupportedEncodingException e) {
+//            e.printStackTrace();
+//        }
+//        for (int j = 0; j < ima1.length; j++) {
+//            Log.i("info", "ima =  " + ima1[j]);
+//        }
         materialRefreshLayout.setMaterialRefreshListener(new MaterialRefreshListener() {
             @Override
             public void onRefresh(final MaterialRefreshLayout materialRefreshLayout) {
@@ -189,52 +191,54 @@ public class fragment_push extends Fragment {
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
-        String MarkName = data.getStringExtra("a");
+         MarkName = data.getStringExtra("a");
         String PID = data.getStringExtra("b");
+        String imageUrl = data.getStringExtra("c");
 //        String TabID =UserID+PID;
         switch (requestCode) {
             case 0:
-                Log.i("DDDDDDD", "info = " + PID);
-                Log.i("DDDDDDD", "textMain = " + MarkName);
-
-                String name1 = "mark";
-
-                String key = "{\"state\":\"" +name1+ "\"," +
-                        "\"UserID\":\""+UserID+"\",\"PID\":\""+PID+"\",\"MarkName\":\""+MarkName+"\"}";
-                try {
-                    URLDecoder.decode(key, "utf-8");
-                } catch (UnsupportedEncodingException e) {
-                    e.printStackTrace();
-                }
-                RequestBody requestBody1 = RequestBody
-                        .create(MediaType.parse("text/plain; charset=utf-8"), key);
-                Request.Builder builder3 = new Request.Builder();
-                Request request2 = builder3
-                        .url(MainActivity.URL)
-                        .post(requestBody1)
-                        .build();
-
-                okhttp3.Call call1 = okHttpClient.newCall(request2);
-                call1.enqueue(new Callback() {
-                    @Override
-                    public void onFailure(okhttp3.Call call, IOException e) {
-                        Log.i("info", " GET请求失败！！！");
+                Log.i("EEEEEE", "info = " + PID);
+                Log.i("EEEEEE", "textMain = " + MarkName);
+                Log.i("EEEEEE", "imageUrl = " + imageUrl);
+                if (!(MarkName.equals("")||MarkName.equals("null")||MarkName.toString().equals("标签"))) {
+                    ImageUrl.add(imageUrl);
+                    String name1 = "mark";
+                    String key = "{\"state\":\""+name1+"\","+
+                            "\"UserID\":\""+UserID+"\",\"PID\":\""+PID+"\",\"MarkName\":\""+MarkName+"\"}";
+                    try {
+                        URLDecoder.decode(key, "utf-8");
+                    } catch (UnsupportedEncodingException e) {
+                        e.printStackTrace();
                     }
+                    RequestBody requestBody1 = RequestBody
+                            .create(MediaType.parse("text/plain; charset=utf-8"), key);
+                    Request.Builder builder3 = new Request.Builder();
+                    Request request2 = builder3
+                            .url(MainActivity.URL)
+                            .post(requestBody1)
+                            .build();
 
-                    @Override
-                    public void onResponse(okhttp3.Call call, Response response) throws IOException {
-
-                        final String res = response.body().string();
-                        Log.i("info", " labelres"+res);
-                        Gson gson = new Gson();
-                        User user = gson.fromJson(res, User.class);
-//                        user.getState();
-                        if ( !user.getState().equals("true"))
-                        {
-                            Log.i("info", " 标签添加失败了哦！！！");
+                    okhttp3.Call call1 = okHttpClient.newCall(request2);
+                    call1.enqueue(new Callback() {
+                        @Override
+                        public void onFailure(okhttp3.Call call, IOException e) {
+                            Log.i("info", " GET请求失败！！！");
                         }
-                    }
-                });
+
+                        @Override
+                        public void onResponse(okhttp3.Call call, Response response) throws IOException {
+
+                            final String res = response.body().string();
+                            Log.i("info", " labelres" + res);
+                            Gson gson = new Gson();
+                            User user = gson.fromJson(res, User.class);
+//                        user.getState();
+                            if (!user.getState().equals("true")) {
+                                Log.i("info", " 标签添加失败了哦！！！");
+                            }
+                        }
+                    });
+                }
                 break;
 
             default:
@@ -245,7 +249,7 @@ public class fragment_push extends Fragment {
     public void flash2() throws UnsupportedEncodingException {
         String name1 = "request";
 
-        String key = "{\"state\":\"" + name1 + "\"}";
+        String key = "{\"state\":\""+name1+"\",\"UserID\":\""+UserID+"\"}";
         URLDecoder.decode(key, "utf-8");
         RequestBody requestBody1 = RequestBody
                 .create(MediaType.parse("text/plain; charset=utf-8"), key);

@@ -68,6 +68,7 @@ public class PictureTagView extends RelativeLayout implements OnEditorActionList
 			tvPictureTagLabel.setText(etPictureTagLabel.getText());
 			if (etPictureTagLabel.getText().toString().equals("")||etPictureTagLabel.getText().toString().equals("标签"))
 			{
+				Image.Label= "";
 				Log.i("DDDDDDD", "text1 = " + etPictureTagLabel.getText().toString());
 				Log.i("DDDDDDD", "你没有打标签");
 			}else {

@@ -17,11 +17,23 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.example.dtlp.MainActivity;
 import com.example.dtlp.R;
 import com.example.dtlp.side_pull_box.view1.SelectAddressDialog;
 import com.example.dtlp.side_pull_box.view1.myinterface.SelectAddressInterface;
+import com.example.dtlp.start.loginActivity;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.util.Date;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -48,7 +60,6 @@ public class Personal_information extends Activity implements SelectAddressInter
 
     private SelectAddressDialog dialog;
 
-    private String url1 = "http://192.168.0.101:8080/TotemDown/LoginServe?username=linyuanbin&password=123456";
 
     OkHttpClient okHttpClient = new OkHttpClient();
 
@@ -59,6 +70,7 @@ public class Personal_information extends Activity implements SelectAddressInter
     String maj = "";
     String ema = "";
     boolean isCheckOn = false;
+    File filename = new File(loginActivity.SDPATH + "dtlp/" + MainActivity.UserID + "/" + MainActivity.UserID + ".txt");
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -69,87 +81,118 @@ public class Personal_information extends Activity implements SelectAddressInter
     }
 
     private void display() {
-        SharedPreferences sp = getSharedPreferences("Personal_Information", Context.MODE_PRIVATE);
-        nickname_.setText(sp.getString("nickname",""));
-        SharedPreferences sp1 = getSharedPreferences("Personal_Information", Context.MODE_PRIVATE);
-        major_.setText(sp1.getString("major",""));
-        SharedPreferences sp2 = getSharedPreferences("Personal_Information", Context.MODE_PRIVATE);
-        email_.setText(sp2.getString("email",""));
-        SharedPreferences sp3 = getSharedPreferences("Personal_Information", Context.MODE_PRIVATE);
-        birthday_.setText(sp3.getString("birthday",""));
-        SharedPreferences sp4 = getSharedPreferences("Personal_Information", Context.MODE_PRIVATE);
-        sex_.setText(sp4.getString("sex",""));
-        SharedPreferences sp5 = getSharedPreferences("Personal_Information", Context.MODE_PRIVATE);
-        where_.setText(sp5.getString("where",""));
+        //从本地用户文件中将数据读取出来
+        String userdata = "";//读出来的Json数据
+        String nickname = "";
+        String major = "";
+        String email = "";
+        String birthday = "";
+        String sex = "";
+        String number="";
+        File filename = new File(loginActivity.SDPATH + "dtlp/" + MainActivity.UserID + "/" + MainActivity.UserID + ".txt"); // 要读取以上路径的input。txt文件
+        Log.i("userdata", "userdata: = " + filename);
+        try {
+            FileReader read = new FileReader(filename);
+            StringBuffer sb = new StringBuffer();
+            char ch[] = new char[1024];
+            int d = read.read(ch);
+            while(d!=-1){
+                String str = new String(ch,0,d);
+                sb.append(str);
+                d = read.read(ch);
+            }
+            userdata= sb.toString();
+            System.out.print(sb.toString());
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        Log.i("userdata", "userdata: = " + userdata);
+        JSONObject jsonObject = null;
+        try {
+            jsonObject = new JSONObject(userdata);
+            nickname=jsonObject.getJSONObject("userData").getString("UserName");
+            major=jsonObject.getJSONObject("userData").getString("UserMajor");
+            sex=jsonObject.getJSONObject("userData").getString("UserSex");
+            number=jsonObject.getJSONObject("userData").getString("UserTel");
+            birthday=jsonObject.getJSONObject("userData").getString("UserBirthday");
+            email=jsonObject.getJSONObject("userData").getString("UserEmail");
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+
+        nickname_.setText(nickname);
+        major_.setText(major);
+        if (email.equals("")||email.equals(null)) {
+            email_.setText("未填写");
+        }else
+        {
+            email_.setText(email);
+        }
+        if (birthday.equals("")||birthday.equals(null)) {
+            birthday_.setText("未填写");
+        }else
+        {
+            birthday_.setText(birthday);
+        }
+        sex_.setText(sex);
+        number_.setText(number);
+//        where_.setText("未填写");
 
     }
     private void  TP()
     {
-//        String post ="{\"UserBirthday\":\""+bir+"\"}";
-//        RequestBody requestBody1 = RequestBody
-//                .create(MediaType.parse("text/x-markdown; charset=utf-8"),post);
-//        Request.Builder builder1 = new Request.Builder();
-//        Request request1 = builder1
-//                .url(url1+"postString")
-//                .post(requestBody1)
+
+
+//        String post1 ="{\"state\":\"update\",\"UserID\":\"Thu Apr 27 18:42:02 CST 20170uv4k\"," +
+//                "\"UserNickName\":\""+nick+"\",\"UserSex\":\""+se + "\"," +
+//                "\"UserBirthday\":\""+bir + "\"" +
+//                ",\"UserMajor\":\""+maj+"\",\"UserEmail\":\""+ema+"\"}";
+
+        //将修改好的用户信息发送给服务器端
+        try {
+            BufferedReader br = new BufferedReader(new FileReader(
+                    filename));// 读取原始json文件
+            StringBuilder user = new StringBuilder();
+            String s = "";
+            while ((s = br.readLine()) != null) {
+                user.append(s);
+            }
+            try {
+                JSONObject dataJson = new JSONObject(user.toString());// 创建一个包含原始json串的json对象
+                JSONObject jsonObject1 = dataJson.getJSONObject("userData");
+                jsonObject1.put("state","update");
+
+                RequestBody requestBody2 = RequestBody
+                        .create(MediaType.parse("text/x-markdown; charset=utf-8"),jsonObject1.toString());
+                Request.Builder builder2 = new Request.Builder();
+                Request request2 = builder2
+                        .url(MainActivity.URL)
+                        .post(requestBody2)
+                        .build();
+                CallHttp(request2);
+            } catch (JSONException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+            br.close();
+
+
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+
+//        RequestBody requestBody2 = RequestBody
+//                .create(MediaType.parse("text/x-markdown; charset=utf-8"),post1);
+//        Request.Builder builder2 = new Request.Builder();
+//        Request request2 = builder2
+//                .url(MainActivity.URL)
+//                .post(requestBody2)
 //                .build();
-//        CallHttp(request1);
+//        CallHttp(request2);
 
-
-
-//        String post1 ="{\"where\":\""+whe+"\"}";
-        String post1 ="{\"state\":\"update\",\"UserID\":\"Thu Apr 27 18:42:02 CST 20170uv4k\",\"UserNickName\":\""+nick+"\",\"UserSex\":\""+se + "\",\"UserBirthday\":\""+bir + "\"" +
-                ",\"UserMajor\":\""+maj+"\",\"UserEmail\":\""+ema+"\"}";
-        RequestBody requestBody2 = RequestBody
-                .create(MediaType.parse("text/x-markdown; charset=utf-8"),post1);
-        Request.Builder builder2 = new Request.Builder();
-        Request request2 = builder2
-                .url(url1)
-                .post(requestBody2)
-                .build();
-        CallHttp(request2);
-
-//        String post2 ="{\"UserSex\":\""+se+"\"}";
-//        RequestBody requestBody3 = RequestBody
-//                .create(MediaType.parse("text/x-markdown; charset=utf-8"),post2);
-//        Request.Builder builder3 = new Request.Builder();
-//        Request request3 = builder3
-//                .url(url1+"postString")
-//                .post(requestBody3)
-//                .build();
-//        CallHttp(request3);
-
-//        String post3 ="{\"UserNickName\":\""+nick+"\"}";
-//        RequestBody requestBody4 = RequestBody
-//                .create(MediaType.parse("text/x-markdown; charset=utf-8"),post3);
-//        Request.Builder builder4 = new Request.Builder();
-//        Request request4 = builder4
-//                .url(url1+"postString")
-//                .post(requestBody4)
-//                .build();
-//        CallHttp(request4);
-
-
-//        String post4 ="{\"UserMajor\":\""+maj+"\"}";
-//        RequestBody requestBody5 = RequestBody
-//                .create(MediaType.parse("text/x-markdown; charset=utf-8"),post4);
-//        Request.Builder builder5 = new Request.Builder();
-//        Request request5 = builder5
-//                .url(url1+"postString")
-//                .post(requestBody5)
-//                .build();
-//        CallHttp(request5);
-
-
-//        String post5 ="{\"UserEmail\":\""+ema+"\"}";
-//        RequestBody requestBody6 = RequestBody
-//                .create(MediaType.parse("text/x-markdown; charset=utf-8"),post5);
-//        Request.Builder builder6 = new Request.Builder();
-//        Request request6 = builder6
-//                .url(url1+"postString")
-//                .post(requestBody6)
-//                .build();
-//        CallHttp(request6);
 
 
     }
@@ -169,7 +212,7 @@ public class Personal_information extends Activity implements SelectAddressInter
         birthday_ = (TextView) findViewById(R.id.birthday_);
         major_ = (TextView) findViewById(R.id.major_);
         email_ = (TextView) findViewById(R.id.email_);
-        number_ = (TextView) findViewById(R.id.email_);
+        number_ = (TextView) findViewById(R.id.number_);
         name = (TextView) findViewById(R.id.name);
     }
 
@@ -178,34 +221,53 @@ public class Personal_information extends Activity implements SelectAddressInter
         switch (view.getId())
         {
             case R.id.nickName:
-
                 personal_information_name_Dialog();
-
                 break;
             case R.id.sex:
                 personal_information_sex_Dialog();
                 break;
             case R.id.birthday:
+                final Date date = new Date();
                 new DatePickerDialog(Personal_information.this, new DatePickerDialog.OnDateSetListener() {
                     @Override
                     public void onDateSet(DatePicker view, int year, int monthOfYear, int dayOfMonth) {
                         isCheckOn = true;
-                         bir = String.format("%d-%d-%d",year,monthOfYear+1,dayOfMonth);
-//                        String post ="{\"birthday\":\""+bir+"\"}";
-//                        RequestBody requestBody1 = RequestBody
-//                                .create(MediaType.parse("text/x-markdown; charset=utf-8"),post);
-//                        Request.Builder builder3 = new Request.Builder();
-//                        Request request2 = builder3
-//                                .url(url1+"postString")
-//                                .post(requestBody1)
-//                                .build();
-//                        CallHttp(request2);
+                        date.setYear(year);
+                        date.setMonth(monthOfYear+1);
+                        date.setDate(dayOfMonth);
+                        bir = String.format("%tF",date);
+                        try {
+                            BufferedReader br = new BufferedReader(new FileReader(
+                                    filename));// 读取原始json文件
+                            StringBuilder user = new StringBuilder();
+                            String s = "";
+                            String ws = "";
+                            while ((s = br.readLine()) != null) {
+                                user.append(s);
+                            }
+                            try {
+                                JSONObject dataJson = new JSONObject(user.toString());// 创建一个包含原始json串的json对象
+                                JSONObject jsonObject1 = dataJson.getJSONObject("userData");
+                                jsonObject1.put("UserBirthday",bir );
+                                ws = dataJson.toString();
+                            } catch (JSONException e) {
+                                // TODO Auto-generated catch block
+                                e.printStackTrace();
+                            }
+                            BufferedWriter bw = new BufferedWriter(new FileWriter(
+                                    filename));// 输出新的json文件
+                            bw.write(ws);
+                            bw.flush();
+                            br.close();
+                            bw.close();
+
+                        } catch (IOException e) {
+                            // TODO Auto-generated catch block
+                            e.printStackTrace();
+                        }
 
 
-                        SharedPreferences msharedPreferences = getSharedPreferences("Personal_Information", Context.MODE_PRIVATE);
-                        SharedPreferences.Editor editor  = msharedPreferences.edit();
-                        editor.putString("birthday",String.format("%d-%d-%d",year,monthOfYear+1,dayOfMonth));
-                        editor.commit();
+
                         birthday_.setText(String.format("%d-%d-%d",year,monthOfYear+1,dayOfMonth));
                     }
                 },2000,1,2).show();
@@ -280,10 +342,43 @@ public class Personal_information extends Activity implements SelectAddressInter
 //                            .build();
 //                    CallHttp(request2);
 
-                    SharedPreferences msharedPreferences = getSharedPreferences("Personal_Information", Context.MODE_PRIVATE);
-                    SharedPreferences.Editor editor  = msharedPreferences.edit();
-                    editor.putString("sex",sex1[0]);
-                    editor.commit();
+//                    SharedPreferences msharedPreferences = getSharedPreferences("Personal_Information", Context.MODE_PRIVATE);
+//                    SharedPreferences.Editor editor  = msharedPreferences.edit();
+//                    editor.putString("sex",sex1[0]);
+//                    editor.commit();
+                    //当用户修改了自己的信息时 同时也对保存在手机上的文件进行修改
+                    try {
+                        BufferedReader br = new BufferedReader(new FileReader(
+                                filename));// 读取原始json文件
+                        StringBuilder user = new StringBuilder();
+                        String s = "";
+                        String ws = "";
+                        while ((s = br.readLine()) != null) {
+                            user.append(s);
+                        }
+                        try {
+                            JSONObject dataJson = new JSONObject(user.toString());// 创建一个包含原始json串的json对象
+                            JSONObject jsonObject1 = dataJson.getJSONObject("userData");
+                            jsonObject1.put("UserSex",sex1[0] );
+                            ws = dataJson.toString();
+                        } catch (JSONException e) {
+                            // TODO Auto-generated catch block
+                            e.printStackTrace();
+                        }
+                        BufferedWriter bw = new BufferedWriter(new FileWriter(
+                                filename));// 输出新的json文件
+                        bw.write(ws);
+                        bw.flush();
+                        br.close();
+                        bw.close();
+
+                    } catch (IOException e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
+                    }
+
+
+
                     sex_.setText(sex1[0]);
                     isCheckOn = true;
                 }
@@ -330,10 +425,44 @@ public class Personal_information extends Activity implements SelectAddressInter
 //                              .build();
 //                        CallHttp(request2);
 
-                        SharedPreferences msharedPreferences = getSharedPreferences("Personal_Information", Context.MODE_PRIVATE);
-                        SharedPreferences.Editor editor = msharedPreferences.edit();
-                        editor.putString("nickname", personal_information_name_text.getText().toString());
-                        editor.commit();
+//                        SharedPreferences msharedPreferences = getSharedPreferences("Personal_Information", Context.MODE_PRIVATE);
+//                        SharedPreferences.Editor editor = msharedPreferences.edit();
+//                        editor.putString("nickname", personal_information_name_text.getText().toString());
+//                        editor.commit();
+
+                        //当用户修改了自己的信息时 同时也对保存在手机上的文件进行修改
+                        try {
+                            BufferedReader br = new BufferedReader(new FileReader(
+                                    filename));// 读取原始json文件
+                            StringBuilder user = new StringBuilder();
+                            String s = "";
+                            String ws = "";
+                            while ((s = br.readLine()) != null) {
+                                user.append(s);
+                            }
+                            try {
+                                Log.i("kkkkkkkkkk", " user.toString() = " + user.toString());
+                                JSONObject dataJson = new JSONObject(user.toString());// 创建一个包含原始json串的json对象
+                                Log.i("kkkkkkkkkk", " dataJson = " + dataJson.toString());
+                                JSONObject jsonObject1 = dataJson.getJSONObject("userData");
+                                jsonObject1.put("UserName",personal_information_name_text.getText().toString() );
+                                ws = dataJson.toString();
+                                Log.i("kkkkkkkkkk", " ws = " + ws);
+                            } catch (JSONException e) {
+                                // TODO Auto-generated catch block
+                                e.printStackTrace();
+                            }
+                            BufferedWriter bw = new BufferedWriter(new FileWriter(
+                                    filename));// 输出新的json文件
+                            bw.write(ws);
+                            bw.flush();
+                            br.close();
+                            bw.close();
+
+                        } catch (IOException e) {
+                            // TODO Auto-generated catch block
+                            e.printStackTrace();
+                        }
                         nickname_.setText(personal_information_name_text.getText().toString());
                         isCheckOn = true;
                     }
@@ -375,10 +504,43 @@ public class Personal_information extends Activity implements SelectAddressInter
 //                            .build();
 //                    CallHttp(request2);
 
-                    SharedPreferences msharedPreferences = getSharedPreferences("Personal_Information", Context.MODE_PRIVATE);
-                    SharedPreferences.Editor editor  = msharedPreferences.edit();
-                    editor.putString("major",personal_information_major_text.getText().toString());
-                    editor.commit();
+//                    SharedPreferences msharedPreferences = getSharedPreferences("Personal_Information", Context.MODE_PRIVATE);
+//                    SharedPreferences.Editor editor  = msharedPreferences.edit();
+//                    editor.putString("major",personal_information_major_text.getText().toString());
+//                    editor.commit();
+
+                    //当用户修改了自己的信息时 同时也对保存在手机上的文件进行修改
+                    try {
+                        BufferedReader br = new BufferedReader(new FileReader(
+                                filename));// 读取原始json文件
+                        StringBuilder user = new StringBuilder();
+                        String s = "";
+                        String ws = "";
+                        while ((s = br.readLine()) != null) {
+                            user.append(s);
+                        }
+                        try {
+                            JSONObject dataJson = new JSONObject(user.toString());// 创建一个包含原始json串的json对象
+                            JSONObject jsonObject1 = dataJson.getJSONObject("userData");
+                            jsonObject1.put("UserMajor",personal_information_major_text.getText().toString() );
+                            ws = dataJson.toString();
+                        } catch (JSONException e) {
+                            // TODO Auto-generated catch block
+                            e.printStackTrace();
+                        }
+                        BufferedWriter bw = new BufferedWriter(new FileWriter(
+                                filename));// 输出新的json文件
+                        bw.write(ws);
+                        bw.flush();
+                        br.close();
+                        bw.close();
+
+                    } catch (IOException e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
+                    }
+
+
                     major_.setText(personal_information_major_text.getText().toString());
                     isCheckOn = true;
                 }
@@ -422,10 +584,42 @@ public class Personal_information extends Activity implements SelectAddressInter
 //                                .build();
 //                        CallHttp(request2);
 
-                        SharedPreferences msharedPreferences = getSharedPreferences("Personal_Information", Context.MODE_PRIVATE);
-                        SharedPreferences.Editor editor  = msharedPreferences.edit();
-                        editor.putString("email",personal_information_email_text.getText().toString());
-                        editor.commit();
+//                        SharedPreferences msharedPreferences = getSharedPreferences("Personal_Information", Context.MODE_PRIVATE);
+//                        SharedPreferences.Editor editor  = msharedPreferences.edit();
+//                        editor.putString("email",personal_information_email_text.getText().toString());
+//                        editor.commit();
+
+
+                        //当用户修改了自己的信息时 同时也对保存在手机上的文件进行修改
+                        try {
+                            BufferedReader br = new BufferedReader(new FileReader(
+                                    filename));// 读取原始json文件
+                            StringBuilder user = new StringBuilder();
+                            String s = "";
+                            String ws = "";
+                            while ((s = br.readLine()) != null) {
+                                user.append(s);
+                            }
+                            try {
+                                JSONObject dataJson = new JSONObject(user.toString());// 创建一个包含原始json串的json对象
+                                JSONObject jsonObject1 = dataJson.getJSONObject("userData");
+                                jsonObject1.put("UserEmail",personal_information_email_text.getText().toString() );
+                                ws = dataJson.toString();
+                            } catch (JSONException e) {
+                                // TODO Auto-generated catch block
+                                e.printStackTrace();
+                            }
+                            BufferedWriter bw = new BufferedWriter(new FileWriter(
+                                    filename));// 输出新的json文件
+                            bw.write(ws);
+                            bw.flush();
+                            br.close();
+                            bw.close();
+
+                        } catch (IOException e) {
+                            // TODO Auto-generated catch block
+                            e.printStackTrace();
+                        }
                         email_.setText(personal_information_email_text.getText().toString());
                         isCheckOn = true;
                     }
@@ -457,14 +651,15 @@ public class Personal_information extends Activity implements SelectAddressInter
 
                 final String res = response.body().string();
                 Log.i("info", " GET请求成功！！！");
+                Log.i("info", " res = "+ res);
 
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-//                        Conten.setText(res);
-                    }
-                });
-            }
+//                runOnUiThread(new Runnable() {
+//                @Override
+//                public void run() {
+////                        Conten.setText(res);
+//                }
+//            });
+        }
         });
     }
     public boolean validateEmail(String email)
@@ -482,7 +677,7 @@ public class Personal_information extends Activity implements SelectAddressInter
     protected void onDestroy() {
         if (isCheckOn)
         {
-//            TP();
+            TP();
             Log.i("info", "post = ");
         }
         super.onDestroy();
